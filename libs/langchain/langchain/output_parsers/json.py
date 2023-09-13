@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import parse
 
 import json
 import re
@@ -65,7 +66,25 @@ def parse_json_markdown(json_string: str) -> dict:
     json_str = _custom_parser(json_str)
 
     # Parse the JSON string into a Python dictionary
-    parsed = json.loads(json_str)
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError:
+        response = {}
+        try:
+            response["action"] = (
+                json_str.split('"action": "', 1)[1].split('",', 1)[0].strip()
+            )
+            response["action_input"] = (
+                json_str.split('"action_input": "', 1)[1].split('"}', 1)[0].strip()
+            )
+            parsed = {
+                "action": response["action"],
+                "action_input": response["action_input"],
+            }
+        except IndexError:
+            raise ValueError(
+                "Invalid input format. Unable to extract 'action' and 'action_input' from the text."
+            )
 
     return parsed
 
